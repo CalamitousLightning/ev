@@ -232,10 +232,8 @@
     #typing-bubble { font-style: italic; opacity: 0.7; }
   </style>
 
-  <!-- ✅ Marked.js (pinned version for reliability) -->
+  <!-- ✅ External Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-  <!-- ✅ Highlight.js -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js/styles/github-dark.min.css">
   <script src="https://cdn.jsdelivr.net/npm/highlight.js/lib/common.min.js"></script>
 </head>
@@ -313,7 +311,10 @@
     </form>
   </div>
 
+<!-- ✅ Custom Script (runs last, after Marked is loaded) -->
 <script>
+  console.log("Marked loaded?", window.marked);
+
   function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("active");
     document.getElementById("overlay").classList.toggle("active");
@@ -348,7 +349,7 @@
     themeToggle.textContent = "🌙";
   }
 
-  // ✅ Safe Markdown wrapper + syntax highlighting + debug log
+  // ✅ Safe Markdown wrapper + syntax highlighting
   function safeMarkdown(txt) {
     try {
       if (!window.marked) {
@@ -366,7 +367,7 @@
     }
   }
 
-  // ✅ Chat logic with Markdown rendering
+  // ✅ Chat logic
   document.getElementById("chat-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const input = document.getElementById("message");
@@ -442,4 +443,3 @@
 </script>
 </body>
 </html>
-
