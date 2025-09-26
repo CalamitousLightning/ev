@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EVOSGPT</title>
   <style>
@@ -188,9 +188,17 @@
       border-bottom-left-radius: 0;
       border: 1px solid var(--border-color);
     }
-    .msg.bot p { margin: 6px 0; }
-    .msg.bot ul, .msg.bot ol { margin: 6px 0 6px 20px; }
+    .msg.bot p { margin: 10px 0; line-height: 1.6; } /* ✅ Better spacing */
+    .msg.bot ul, .msg.bot ol { margin: 8px 0 8px 20px; }
     .msg.bot li { margin: 4px 0; }
+
+    pre code {
+      display: block;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 14px;
+    }
 
     #chat-form {
       display: flex;
@@ -224,8 +232,11 @@
     #typing-bubble { font-style: italic; opacity: 0.7; }
   </style>
 
-  <!-- ✅ Marked.js (must load before custom script) -->
+  <!-- ✅ Marked.js -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- ✅ Highlight.js -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js/styles/github-dark.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js/lib/common.min.js"></script>
 </head>
 <body>
   <!-- Sidebar -->
@@ -336,10 +347,14 @@
     themeToggle.textContent = "🌙";
   }
 
-  // ✅ Safe Markdown wrapper
+  // ✅ Safe Markdown wrapper + syntax highlighting
   function safeMarkdown(txt) {
     try {
-      return window.marked ? marked.parse(txt) : txt;
+      const html = window.marked ? marked.parse(txt) : txt;
+      if (window.hljs) {
+        setTimeout(() => hljs.highlightAll(), 0);
+      }
+      return html;
     } catch (e) {
       console.error("Markdown parse error", e);
       return txt;
