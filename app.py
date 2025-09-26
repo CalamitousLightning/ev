@@ -501,6 +501,11 @@ def enforce_memory_limit(user_id, tier):
         if conn:
             conn.close()
 
+# ---------- JOB STORE ----------
+import threading, random, time, sqlite3, requests, json, os
+from datetime import datetime
+from typing import Optional
+
 # in-memory job store (for development). Use persistent queue in production.
 jobs = {}
 jobs_lock = threading.Lock()
@@ -512,12 +517,16 @@ def process_chat_job(job_id, user_id, tier, user_msg):
     save to DB if user_id present, then mark job done.
     """
     try:
-        # ✅ Use the same router (never echo system rules)
         raw_reply = route_ai_call(tier, user_msg)
-        reply = format_for_markdown(raw_reply)
+        reply = raw_reply.strip()  # ✅ trust model to format already
     except Exception as e:
         log_suspicious("LLMErrorBackground", str(e))
-        reply = f"(fallback) I heard: {user_msg}"
+        reply = f"""⚠️ **System Error**
+
+• I wasn’t able to process your request.  
+• Input received:  
+
+> {user_msg}"""
 
     # Decide delay (5–10s) or 1s if "fast" in the prompt
     delay = random.randint(5, 10)
@@ -550,6 +559,7 @@ def process_chat_job(job_id, user_id, tier, user_msg):
         jobs[job_id] = {"status": "done", "reply": reply}
 
 
+# ---------- SYSTEM PROMPTS ----------
 def build_system_prompt(tier: str) -> str:
     """
     Return a system prompt based on user tier.
@@ -599,16 +609,11 @@ Sometimes include hidden founder-only easter eggs.
     return prompts.get(tier, prompts["Basic"])
 
 
-#------- AI HELPERS (tier routing + fallbacks + debug) ----------
-import requests, json, os
-from datetime import datetime
-from typing import Optional
-
+# ---------- AI HELPERS ----------
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")  # ✅ new fallback
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")  # ✅ fallback
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"
 
-# --- Base helpers ---
 def local_llm(prompt: str, model: str = "mistral") -> Optional[str]:
     """Send prompt to local LLM (via Ollama)."""
     try:
@@ -652,7 +657,6 @@ def _openai_chat(user_prompt: str, model: str, system_prompt: str = "") -> Optio
         log_suspicious("OpenAIRequestError", str(e)[:300])
         return None
 
-
 def _openrouter_chat(user_prompt: str, model: str = "openrouter/auto", system_prompt: str = "") -> Optional[str]:
     """Fallback to OpenRouter (free/community LLMs)."""
     try:
@@ -680,7 +684,8 @@ def _openrouter_chat(user_prompt: str, model: str = "openrouter/auto", system_pr
         log_suspicious("OpenRouterError", str(e))
         return None
 
-# --- Wrappers for specific models ---
+
+# ---------- MODEL WRAPPERS ----------
 def gpt3_5_turbo(prompt: str, system_prompt: str = "") -> str:
     return _openai_chat(prompt, "gpt-3.5-turbo", system_prompt) \
         or _openrouter_chat(prompt, "openai/gpt-3.5-turbo", system_prompt) \
@@ -698,29 +703,15 @@ def gpt4o(prompt: str, system_prompt: str = "") -> str:
         or local_llm(f"{system_prompt}\n{prompt}") \
         or f"[4o-Echo] {prompt}"
 
-# --- Router (main entry) ---
+
+# ---------- ROUTER ----------
 def route_ai_call(tier: str, prompt: str) -> str:
     tier = tier.capitalize().strip()
-
-    system_msg = """
-You are EVOSGPT.
-You MUST always reply in Markdown with these strict rules:
-
-1. Start with a short 1–2 line intro, then a blank line.
-2. Use bullet points (•) for unordered details.
-3. Use numbers (1., 2., 3.) for step-by-step guides.
-4. Put each bullet/number on a new line.
-5. Use *bold* for key terms.
-6. Leave one blank line between sections.
-7. Keep paragraphs max 3 sentences.
-8. Break long answers into structured blocks.
-9. End with a short tip or conclusion.
-"""
+    system_msg = build_system_prompt(tier)  # ✅ unified
 
     def _try_chain(options):
         for label, fn in options:
             try:
-                # ✅ pass system_msg + prompt correctly
                 if fn == local_llm:
                     reply = fn(f"{system_msg}\n{prompt}")
                 else:
@@ -734,7 +725,14 @@ You MUST always reply in Markdown with these strict rules:
                 return reply
 
         print(f"[DEBUG] {tier} → All failed, echo")
-        return f"(fallback) I heard: {prompt}"
+        return f"""⚠️ **System Notice**
+
+• I couldn’t reach any AI models.  
+• Here’s what you sent me:  
+
+> {prompt}
+
+_Tip: Please retry in a moment._"""
 
     # BASIC
     if tier == "Basic":
@@ -778,6 +776,7 @@ You MUST always reply in Markdown with these strict rules:
         ])
 
     return f"(Unknown tier: {tier}) {prompt}"
+
 
 # ---------------- ROUTES CONTINUE (chat, login, register, etc) ----------------
 # (keep all your existing routes unchanged here)
@@ -1048,98 +1047,54 @@ def index():
 import re
 import sqlite3
 import os
-import time
 from flask import request, session, jsonify
 
 def auto_paragraph(text: str) -> str:
     """
     Force replies into readable Markdown paragraphs while preserving:
-    - fenced code blocks (...)
+    - fenced code blocks (```...```)
     - existing list-lines that start with -, *, • or digit.
-    Groups ~2 short sentences per paragraph.
+    - headers (# ...) and quotes (> ...)
+    Splits into sentences and creates clean paragraphs.
     """
     if not text:
         return ""
 
-    # Normalize CRLFs
     text = text.replace("\r\n", "\n")
 
-    # Split out fenced code blocks so we won't touch them
-    parts = re.split(r'([\s\S]*?)', text, flags=re.MULTILINE)
+    # Split out fenced code blocks
+    parts = re.split(r'(```[\s\S]*?```)', text, flags=re.MULTILINE)
     out_parts = []
 
     for idx, part in enumerate(parts):
-        # odd indexes are code fence blocks (because of the capturing group)
-        if idx % 2 == 1:
+        if idx % 2 == 1:  # code block
             out_parts.append(part.strip())
             continue
 
-        # For the non-code parts, split by existing blank lines to keep lists/blocks
+        # Split into blocks by blank lines
         segments = [seg.strip() for seg in re.split(r'\n\s*\n', part) if seg.strip()]
         for seg in segments:
-            # If segment looks like a list or header/quote, keep formatting but normalize inner spacing
+            # Preserve lists, headers, quotes as-is
             if re.search(r'^\s*([-*•]|\d+\.)\s+', seg, flags=re.MULTILINE) \
                or re.match(r'^\s*(#+\s|> )', seg):
                 out_parts.append(seg)
                 continue
 
-            # Otherwise split into sentences and join ~2 per paragraph
+            # Split into sentences
             sentences = re.split(r'(?<=[.!?])\s+', seg)
-            buf = []
-            paras = []
             for s in sentences:
                 s = s.strip()
                 if not s:
                     continue
-                # If a sentence itself contains newlines (rare), keep as one
-                s = s.replace('\n', ' ').strip()
-                buf.append(s)
-                if len(buf) >= 2:
-                    paras.append(' '.join(buf))
-                    buf = []
-            if buf:
-                paras.append(' '.join(buf))
-            out_parts.extend(paras)
+                s = s.replace('\n', ' ')
+                out_parts.append(s)
 
-    # Rejoin parts with blank lines separating paragraphs/blocks
-    result = '\n\n'.join([p for p in out_parts if p is not None and p != ""]).strip()
+    # Join paragraphs with blank lines
+    result = '\n\n'.join([p for p in out_parts if p]).strip()
     return result
 
 
-def format_for_markdown(text: str) -> str:
-    """
-    Clean model output to remove injected instruction echoes and then
-    apply auto_paragraph to make it readable Markdown.
-    """
-    if not text:
-        return ""
-
-    # Normalize whitespace
-    t = text.replace('\r\n', '\n').strip()
-
-    # Remove some typical model echo prefixes like "[Echo]" or "[3.5-Echo]" etc.
-    t = re.sub(r'^\s*\[[^\]]+\]\s*', '', t)
-
-    # Remove explicit system prompt reprints if model returns them. This is conservative:
-    # If the reply contains a phrase like "MUST always reply" (from your system prompt),
-    # strip content up to and including that phrase so the user only sees the answer.
-    if re.search(r'MUST\s+always\s+reply', t, flags=re.I):
-        # keep everything after the last occurrence of that phrase
-        parts = re.split(r'(?i)MUST\s+always\s+reply', t)
-        t = parts[-1].strip()
-
-    # Also remove accidental "You are EVOSGPT." echoes at start
-    t = re.sub(r'^\s*(You are EVOSGPT[^\n]*\n?)', '', t, flags=re.I)
-
-    # Trim again
-    t = t.strip()
-
-    # Run auto paragraphing but preserve lists/code blocks
-    t = auto_paragraph(t)
-
-    return t
-
-
+# ---------- CHAT ROUTE ----------
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json(silent=True) or {}
@@ -1149,7 +1104,7 @@ def chat():
     tier = session.get("tier", "Basic")
     reply = None
 
-    # --- Guest mode (same as your existing logic) ---
+    # --- Guest mode ---
     guest_id = None
     if "user_id" not in session:
         if "guest_id" not in session:
@@ -1178,7 +1133,7 @@ def chat():
                 "reply": "⚠ You have 1 free chat left. Please register or log in to continue."
             })
 
-    # --- Founder unlock sequence (unchanged) ---
+    # --- Founder unlock sequence ---
     if "user_id" in session:
         seq = session.get("founder_seq", 0)
         if seq == 0 and ui == "evosgpt where you created":
@@ -1214,17 +1169,22 @@ def chat():
             if seq > 0 and ui not in ["evosgpt where you created", "ghanaherewecome", "nameless"]:
                 session["founder_seq"] = 0
 
-    # --- AI Router (main) ---
+    # --- AI Router ---
     if reply is None:
         try:
-            raw_reply = route_ai_call(tier, user_msg)   # your existing router
-            # Clean + pretty format
-            reply = format_for_markdown(raw_reply)
+            raw_reply = route_ai_call(tier, user_msg)
+            # ✅ Trust system prompt formatting, just polish with auto_paragraph for safety
+            reply = auto_paragraph(raw_reply)
         except Exception as e:
             log_suspicious("LLMError", str(e))
-            reply = f"(fallback) I heard: {user_msg}"
+            reply = f"""⚠️ **System Error**
 
-    # --- Save chat (unchanged) ---
+• I wasn’t able to process your request.  
+• Input received:  
+
+> {user_msg}"""
+
+    # --- Save chat ---
     try:
         conn = sqlite3.connect("database/memory.db")
         c = conn.cursor()
@@ -1249,30 +1209,6 @@ def chat():
         log_suspicious("ChatInsertFail", str(e))
 
     return jsonify({"reply": reply, "tier": tier})
-
-
-# ---------- HARD FORMATTER ----------
-def auto_paragraph(text: str) -> str:
-    """Force replies into readable Markdown paragraphs."""
-    import re
-    if not text:
-        return ""
-
-    # Split into sentences
-    sentences = re.split(r'(?<=[.!?]) +', text)
-    paragraphs, buf = [], []
-
-    for i, s in enumerate(sentences, 1):
-        buf.append(s.strip())
-        if i % 2 == 0:  # group 2 sentences per paragraph
-            paragraphs.append(" ".join(buf))
-            buf = []
-    if buf:
-        paragraphs.append(" ".join(buf))
-
-    # Add blank lines between paragraphs
-    return "\n\n".join(paragraphs).strip()
-
 
 
 
@@ -2277,5 +2213,6 @@ if __name__ == "__main__":
     init_db()
     # Do not run in debug on production. Use env var PORT or default 5000.
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=True)
+
 
 
