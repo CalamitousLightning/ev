@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="="UTF-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EVOSGPT</title>
   <style>
@@ -188,7 +188,7 @@
       border-bottom-left-radius: 0;
       border: 1px solid var(--border-color);
     }
-    .msg.bot p { margin: 10px 0; line-height: 1.6; } /* ✅ Better spacing */
+    .msg.bot p { margin: 10px 0; line-height: 1.6; }
     .msg.bot ul, .msg.bot ol { margin: 8px 0 8px 20px; }
     .msg.bot li { margin: 4px 0; }
 
@@ -232,8 +232,8 @@
     #typing-bubble { font-style: italic; opacity: 0.7; }
   </style>
 
-  <!-- ✅ Marked.js -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- ✅ Marked.js (pinned version for reliability) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@9.0.0/marked.min.js"></script>
   <!-- ✅ Highlight.js -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js/styles/github-dark.min.css">
   <script src="https://cdn.jsdelivr.net/npm/highlight.js/lib/common.min.js"></script>
@@ -347,10 +347,14 @@
     themeToggle.textContent = "🌙";
   }
 
-  // ✅ Safe Markdown wrapper + syntax highlighting
+  // ✅ Safe Markdown wrapper + syntax highlighting + debug log
   function safeMarkdown(txt) {
     try {
-      const html = window.marked ? marked.parse(txt) : txt;
+      if (!window.marked) {
+        console.error("❌ Marked.js not loaded!");
+        return txt;
+      }
+      const html = marked.parse(txt);
       if (window.hljs) {
         setTimeout(() => hljs.highlightAll(), 0);
       }
