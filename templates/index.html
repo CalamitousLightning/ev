@@ -4,13 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EVOSGPT</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-
   <style>
     :root {
       --bg-color: #f5f7fa;
       --text-color: #333;
-      --primary-color: #ff9800; /* 🔶 Golden/orange for upgrade */
+      --primary-color: #00d4ff;
       --header-bg: #00d4ff;
       --sidebar-bg: #222;
       --chat-user-bg: #00d4ff;
@@ -22,7 +20,7 @@
     [data-theme="dark"] {
       --bg-color: #121212;
       --text-color: #f5f5f5;
-      --primary-color: #ff9800; 
+      --primary-color: #00d4ff;
       --header-bg: #1e1e1e;
       --sidebar-bg: #111;
       --chat-user-bg: #00d4ff;
@@ -132,7 +130,7 @@
       margin-left: 10px;
     }
 
-    /* 🔶 Floating Upgrade Button (Golden/Orange) */
+    /* ✅ Floating Upgrade Button */
     #upgrade-btn {
       position: fixed;
       top: 60px;
@@ -149,7 +147,7 @@
       z-index: 998;
       box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
-    #upgrade-btn:hover { background: #e68900; }
+    #upgrade-btn:hover { background: #009ac7; }
 
     /* Chat */
     #chat-container {
@@ -190,9 +188,17 @@
       border-bottom-left-radius: 0;
       border: 1px solid var(--border-color);
     }
-    .msg.bot p { margin: 6px 0; }
-    .msg.bot ul, .msg.bot ol { margin: 6px 0 6px 20px; }
+    .msg.bot p { margin: 10px 0; line-height: 1.6; }
+    .msg.bot ul, .msg.bot ol { margin: 8px 0 8px 20px; }
     .msg.bot li { margin: 4px 0; }
+
+    pre code {
+      display: block;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 14px;
+    }
 
     #chat-form {
       display: flex;
@@ -226,8 +232,10 @@
     #typing-bubble { font-style: italic; opacity: 0.7; }
   </style>
 
-  <!-- ✅ Local Marked.js -->
-  <script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
+  <!-- ✅ Local Libraries -->
+  <script src="{{ url_for('static', filename='marked.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='highlight.min.js') }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='github-dark.min.css') }}">
 </head>
 <body>
   <!-- Sidebar -->
@@ -254,7 +262,7 @@
       {% endif %}
     </div>
 
-    <!-- 🎁 Referral Section -->
+    <!-- Invite -->
     {% if referral_link %}
     <div style="padding:10px; border-top:1px solid #444;">
       🎁 Invite Friends <br>
@@ -289,7 +297,7 @@
     </div>
   </header>
 
-  <!-- 🔶 Floating Upgrade (only for lower tiers) -->
+  <!-- ✅ Floating Upgrade (only for lower tiers) -->
   {% if tier not in ["King", "Founder"] %}
     <button id="upgrade-btn" onclick="location.href='/upgrade'">⚡ Upgrade Tier</button>
   {% endif %}
@@ -303,7 +311,10 @@
     </form>
   </div>
 
+<!-- ✅ Custom Script -->
 <script>
+  console.log("Marked loaded?", window.marked);
+
   function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("active");
     document.getElementById("overlay").classList.toggle("active");
@@ -338,7 +349,25 @@
     themeToggle.textContent = "🌙";
   }
 
-  // ✅ Chat logic with Markdown rendering
+  // ✅ Safe Markdown wrapper + syntax highlighting
+  function safeMarkdown(txt) {
+    try {
+      if (!window.marked) {
+        console.error("❌ Marked.js not loaded!");
+        return txt;
+      }
+      const html = marked.parse(txt);
+      if (window.hljs) {
+        setTimeout(() => hljs.highlightAll(), 0);
+      }
+      return html;
+    } catch (e) {
+      console.error("Markdown parse error", e);
+      return txt;
+    }
+  }
+
+  // ✅ Chat logic
   document.getElementById("chat-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const input = document.getElementById("message");
@@ -369,7 +398,7 @@
       chatBox.insertAdjacentHTML("beforeend", `
         <div class="msg bot">
           <strong>EVOSGPT [${data.tier || "?"}]</strong><br>
-          <div class="bot-content">${marked.parse(data.reply)}</div>
+          <div class="bot-content">${safeMarkdown(data.reply)}</div>
           <button class="copy-btn" onclick="copyText(this)">📋</button>
         </div>
       `);
