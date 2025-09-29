@@ -233,9 +233,14 @@
   </style>
 
   <!-- ✅ Local Libraries -->
-  <script src="{{ url_for('static', filename='marked.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='highlight.min.js') }}"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='github-dark.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/github-dark.min.css') }}">
+<script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/highlight.min.js') }}"></script>
+
+<!-- your own files -->
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
 </head>
 <body>
   <!-- Sidebar -->
@@ -443,3 +448,4 @@
 </script>
 </body>
 </html>
+
