@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EVOSGPT</title>
 
-  <!-- Local Static Files -->
+  <!-- ✅ Local Static Files -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/github-dark.min.css') }}">
   <script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
   <script src="{{ url_for('static', filename='js/highlight.min.js') }}"></script>
@@ -15,7 +15,7 @@
     :root {
       --bg-color: #f5f7fa;
       --text-color: #333;
-      --primary-color: #ff9800; /* Orange */
+      --primary-color: #ff9800;
       --header-bg: #00d4ff;
       --sidebar-bg: #222;
       --chat-user-bg: #00d4ff;
@@ -40,8 +40,8 @@
     body {
       margin: 0;
       font-family: "Poppins", Arial, sans-serif;
-      height: 100vh;
       display: flex;
+      height: 100vh;
       flex-direction: column;
       background: var(--bg-color);
       color: var(--text-color);
@@ -82,7 +82,6 @@
     }
     #overlay.active { display: block; }
 
-    /* Hub dropdown */
     .hub-toggle {
       cursor: pointer;
       padding: 12px;
@@ -112,7 +111,7 @@
       z-index: 999;
     }
     header .menu-btn { cursor: pointer; font-size: 22px; }
-    header h1 { margin: 5px 0; font-size: 18px; text-align: center; flex: 1; }
+    header h1 { margin: 5px 0; font-size: 18px; flex: 1; text-align: center; }
     .auth-links a { color: white; margin-left: 15px; text-decoration: none; }
     #theme-toggle {
       background: transparent;
@@ -123,7 +122,7 @@
       margin-left: 10px;
     }
 
-    /* Floating Upgrade Button */
+    /* Upgrade Button */
     #upgrade-btn {
       position: fixed;
       top: 60px;
@@ -142,7 +141,7 @@
     }
     #upgrade-btn:hover { background: #e68900; }
 
-    /* Chat Layout Fix */
+    /* Chat Layout */
     #chat-container {
       position: fixed;
       top: 70px;
@@ -154,12 +153,57 @@
     }
     #chat-box {
       flex: 1;
-      padding: 20px;
+      padding: 15px 20px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       background: var(--bg-color);
+      scroll-behavior: smooth;
     }
+    .msg {
+      max-width: 75%;
+      margin: 6px 0;
+      padding: 10px 14px;
+      border-radius: 10px;
+      line-height: 1.5;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+    .user {
+      background: var(--chat-user-bg);
+      color: var(--chat-user-text);
+      align-self: flex-end;
+      border-bottom-right-radius: 0;
+    }
+    .bot {
+      background: var(--chat-bot-bg);
+      color: var(--chat-bot-text);
+      align-self: flex-start;
+      border-bottom-left-radius: 0;
+      border: 1px solid var(--border-color);
+    }
+    .bot .bot-content p { margin: 8px 0; }
+    .bot .bot-content ul, .bot .bot-content ol { margin: 6px 0 6px 20px; }
+
+    pre code {
+      display: block;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 14px;
+    }
+
+    .copy-btn {
+      margin-top: 6px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--primary-color);
+      align-self: flex-end;
+    }
+    .copy-btn:hover { color: #4caf50; }
+
     #chat-form {
       display: flex;
       padding: 10px;
@@ -183,43 +227,9 @@
       cursor: pointer;
     }
 
-    .msg {
-      max-width: 70%;
-      margin: 6px 0;
-      padding: 10px 14px;
-      border-radius: 10px;
-      line-height: 1.4;
-      word-wrap: break-word;
-      white-space: pre-wrap;
-    }
-    .user {
-      background: var(--chat-user-bg);
-      color: var(--chat-user-text);
-      align-self: flex-end;
-      border-bottom-right-radius: 0;
-    }
-    .bot {
-      background: var(--chat-bot-bg);
-      color: var(--chat-bot-text);
-      align-self: flex-start;
-      border-bottom-left-radius: 0;
-      border: 1px solid var(--border-color);
-    }
-
-    .copy-btn, .share-btn {
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      font-size: 14px;
-      margin-left: 5px;
-      color: var(--primary-color);
-    }
-    .copy-btn:hover, .share-btn:hover { color: #4caf50; }
-
     #typing-bubble { font-style: italic; opacity: 0.7; }
   </style>
 </head>
-
 <body>
   <!-- Sidebar -->
   <div id="sidebar">
@@ -246,8 +256,7 @@
         <div style="padding:10px; border-top:1px solid #444; margin-top:5px;">
           🎁 <strong>Referral Invite</strong><br>
           <input type="text" id="referral-link" value="{{ referral_link }}" readonly style="width:100%; padding:6px; border-radius:6px;">
-          <button onclick="copyReferral()" class="copy-btn">📋 Copy</button>
-          <button onclick="shareReferral()" class="share-btn">🔗 Share</button>
+          <button onclick="copyReferral()" style="margin-top:5px; padding:6px 10px; border:none; background:var(--primary-color); color:#fff; border-radius:6px; cursor:pointer;">📋 Copy</button>
         </div>
       {% endif %}
     </div>
@@ -280,6 +289,7 @@
     <button id="upgrade-btn" onclick="location.href='/upgrade'">⚡ Upgrade Tier</button>
   {% endif %}
 
+  <!-- Chat -->
   <div id="chat-container">
     <div id="chat-box"></div>
     <form id="chat-form">
@@ -351,8 +361,7 @@
         <div class="msg bot">
           <strong>EVOSGPT [${data.tier || "?"}]</strong><br>
           <div class="bot-content">${marked.parse(data.reply)}</div>
-          <button class="copy-btn" onclick="copyText(this)">📋</button>
-          <button class="share-btn" onclick="shareText(this)">🔗</button>
+          <button class="copy-btn" onclick="copyText(this)">📋 Copy</button>
         </div>
       `);
       scrollToBottom();
@@ -362,34 +371,20 @@
     }
   });
 
-  // Referral and Share Buttons
+  // Referral copy
   function copyReferral() {
     const link = document.getElementById("referral-link");
     link.select();
-    document.execCommand("copy");
-    alert("✅ Referral link copied!");
+    navigator.clipboard.writeText(link.value).then(() => alert("✅ Referral link copied!"));
   }
 
-  function shareReferral() {
-    const link = document.getElementById("referral-link").value;
-    if (navigator.share) {
-      navigator.share({ title: "Join me on EVOSGPT", url: link });
-    } else {
-      alert("Copy this link to share: " + link);
-    }
-  }
-
-  function copyText(btn) {
-    const text = btn.parentElement.innerText.replace("📋", "").trim();
-    navigator.clipboard.writeText(text);
-    btn.textContent = "✅";
-    setTimeout(() => btn.textContent = "📋", 1500);
-  }
-
-  function shareText(btn) {
-    const text = btn.parentElement.innerText.replace("📋", "").trim();
-    if (navigator.share) navigator.share({ title: "EVOSGPT Reply", text });
-    else alert("Copy and share manually:\n" + text);
+  // Copy message
+  function copyText(button) {
+    const text = button.parentElement.innerText.replace("📋 Copy", "").trim();
+    navigator.clipboard.writeText(text).then(() => {
+      button.textContent = "✅ Copied";
+      setTimeout(() => button.textContent = "📋 Copy", 1500);
+    });
   }
 
   // Notices
