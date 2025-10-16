@@ -9,7 +9,9 @@
   --chat-bot-bg: #fff;
   --chat-bot-text: #333;
   --border-color: #ccc;
+  --bottom-safe-space: 90px; /* ✅ dynamic gap below messages */
 }
+
 [data-theme="dark"] {
   --bg-color: #121212;
   --text-color: #f5f5f5;
@@ -60,7 +62,9 @@ body {
   color: white;
   text-decoration: none;
 }
-#sidebar a:hover { background: var(--primary-color); }
+#sidebar a:hover {
+  background: var(--primary-color);
+}
 #sidebar.active {
   left: 0;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.4);
@@ -146,13 +150,12 @@ header h1 {
 }
 #upgrade-btn:hover { background: #009ac7; }
 
-/* Chat container fixes */
+/* Chat container */
 #chat-container {
   flex: 1;
   display: flex;
   flex-direction: column;
   margin-top: 100px;
-  padding-bottom: 70px;
   height: calc(100vh - 100px);
 }
 #chat-box {
@@ -162,6 +165,14 @@ header h1 {
   display: flex;
   flex-direction: column;
   background: var(--bg-color);
+  scroll-behavior: smooth;
+}
+
+/* ✅ Keep last message visible */
+#chat-box::after {
+  content: "";
+  display: block;
+  height: var(--bottom-safe-space);
 }
 
 /* Message bubbles */
@@ -186,20 +197,34 @@ header h1 {
   border-bottom-left-radius: 0;
   border: 1px solid var(--border-color);
 }
-.msg.bot p { margin: 10px 0; line-height: 1.6; }
-.msg.bot ul, .msg.bot ol { margin: 8px 0 8px 20px; }
-.msg.bot li { margin: 4px 0; }
+
+/* Paragraph & list spacing (reduced) */
+.msg.bot p { margin: 6px 0; line-height: 1.5; }
+.msg.bot ul, .msg.bot ol { margin: 6px 0 6px 20px; }
+.msg.bot li { margin: 3px 0; }
 
 /* Code blocks */
 pre code {
   display: block;
-  padding: 10px;
+  padding: 8px;
   border-radius: 6px;
   overflow-x: auto;
   font-size: 14px;
+  background: rgba(0, 0, 0, 0.05);
 }
 
-/* Chat input bar (fix) */
+/* Copy button */
+.copy-btn {
+  margin-left: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--primary-color);
+}
+.copy-btn:hover { color: #4caf50; }
+
+/* Chat input bar */
 #chat-form {
   display: flex;
   align-items: center;
@@ -229,15 +254,6 @@ pre code {
 }
 
 /* Misc */
-.copy-btn {
-  margin-left: 8px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--primary-color);
-}
-.copy-btn:hover { color: #4caf50; }
 #typing-bubble { font-style: italic; opacity: 0.7; }
 
 .invite-box {
