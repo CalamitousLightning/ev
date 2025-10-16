@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EVOSGPT</title>
 
+  <!-- ✅ Favicon -->
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/evosgpt-icon.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='images/evosgpt-icon.png') }}">
+
   <!-- ✅ Local Static Files -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/github-dark.min.css') }}">
   <script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
@@ -15,7 +19,7 @@
     :root {
       --bg-color: #f5f7fa;
       --text-color: #333;
-      --primary-color: #ff9800; /* Orange accent */
+      --primary-color: #ff9800;
       --header-bg: #00d4ff;
       --sidebar-bg: #222;
       --chat-user-bg: #00d4ff;
@@ -82,7 +86,6 @@
     }
     #overlay.active { display: block; }
 
-    /* Hub dropdown */
     .hub-toggle {
       cursor: pointer;
       padding: 12px;
@@ -113,7 +116,8 @@
       z-index: 999;
     }
     header .menu-btn { cursor: pointer; font-size: 22px; }
-    header h1 { margin: 5px 0; font-size: 18px; flex: 1; text-align: center; }
+    header h1 { margin: 5px 0; font-size: 18px; flex: 1; text-align: center; display: flex; align-items: center; justify-content: center; }
+    header h1 img { width: 22px; height: 22px; margin-right: 8px; vertical-align: middle; }
     .auth-links a { color: white; margin-left: 15px; text-decoration: none; }
     #theme-toggle {
       background: transparent;
@@ -155,7 +159,7 @@
     }
     #chat-box {
       flex: 1;
-      padding: 15px 20px;
+      padding: 12px 18px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -166,10 +170,10 @@
     /* Messages */
     .msg {
       max-width: 75%;
-      margin: 6px 0;
-      padding: 10px 14px;
+      margin: 4px 0;
+      padding: 9px 12px;
       border-radius: 10px;
-      line-height: 1.45;
+      line-height: 1.35;
       word-wrap: break-word;
       white-space: pre-wrap;
       position: relative;
@@ -188,12 +192,11 @@
       border: 1px solid var(--border-color);
     }
 
-    /* Paragraph & List Spacing */
-    .bot .bot-content p { margin: 5px 0; }
-    .bot .bot-content ul, .bot .bot-content ol { margin: 6px 0 6px 18px; }
-    .bot .bot-content li { margin: 3px 0; }
+    /* Paragraph & List Spacing (tighter) */
+    .bot .bot-content p { margin: 3px 0; }
+    .bot .bot-content ul, .bot .bot-content ol { margin: 4px 0 4px 16px; }
+    .bot .bot-content li { margin: 2px 0; }
 
-    /* Code Blocks */
     pre code {
       display: block;
       padding: 8px;
@@ -203,7 +206,6 @@
       background: rgba(0,0,0,0.05);
     }
 
-    /* Copy Button */
     .copy-btn {
       position: absolute;
       right: 10px;
@@ -244,6 +246,7 @@
     #typing-bubble { font-style: italic; opacity: 0.7; }
   </style>
 </head>
+
 <body>
   <!-- Sidebar -->
   <div id="sidebar">
@@ -266,13 +269,6 @@
       {% else %}
         <a href="/logout">🚪 Logout</a>
       {% endif %}
-      {% if referral_link %}
-        <div style="padding:10px; border-top:1px solid #444; margin-top:5px;">
-          🎁 <strong>Referral Invite</strong><br>
-          <input type="text" id="referral-link" value="{{ referral_link }}" readonly style="width:100%; padding:6px; border-radius:6px;">
-          <button onclick="copyReferral()" style="margin-top:5px; padding:6px 10px; border:none; background:var(--primary-color); color:#fff; border-radius:6px; cursor:pointer;">📋 Copy</button>
-        </div>
-      {% endif %}
     </div>
 
     <div id="system-notices">
@@ -285,7 +281,10 @@
   <!-- Header -->
   <header>
     <span class="menu-btn" onclick="toggleSidebar()">☰</span>
-    <h1>EVOSGPT {{ icon }} {{ tier }} Mode</h1>
+    <h1>
+      <img src="{{ url_for('static', filename='images/evosgpt-icon.png') }}" alt="EVOSGPT Logo">
+      EVOSGPT {{ icon }} {{ tier }} Mode
+    </h1>
     <div style="display:flex; align-items:center;">
       <div class="auth-links">
         {% if not logged_in %}
@@ -313,7 +312,6 @@
   </div>
 
 <script>
-  // Sidebar toggle
   function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("active");
     document.getElementById("overlay").classList.toggle("active");
@@ -326,7 +324,6 @@
   const chatBox = document.getElementById("chat-box");
   function scrollToBottom() { chatBox.scrollTop = chatBox.scrollHeight; }
 
-  // Theme toggle
   const themeToggle = document.getElementById("theme-toggle");
   themeToggle.addEventListener("click", () => {
     const current = document.body.getAttribute("data-theme");
@@ -344,7 +341,6 @@
   document.body.setAttribute("data-theme", savedTheme || "light");
   themeToggle.textContent = savedTheme === "dark" ? "☀" : "🌙";
 
-  // Chat handling
   document.getElementById("chat-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const input = document.getElementById("message");
@@ -385,14 +381,6 @@
     }
   });
 
-  // Referral copy
-  function copyReferral() {
-    const link = document.getElementById("referral-link");
-    link.select();
-    navigator.clipboard.writeText(link.value).then(() => alert("✅ Referral link copied!"));
-  }
-
-  // Copy message
   function copyText(button) {
     const text = button.parentElement.innerText.replace("📋", "").trim();
     navigator.clipboard.writeText(text).then(() => {
@@ -401,7 +389,6 @@
     });
   }
 
-  // Notices
   async function loadNotices() {
     try {
       const res = await fetch("/system_notices");
