@@ -1,246 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EVOSGPT</title>
-  <style>
-    :root {
-      --bg-color: #f5f7fa;
-      --text-color: #333;
-      --primary-color: #00d4ff;
-      --header-bg: #00d4ff;
-      --sidebar-bg: #222;
-      --chat-user-bg: #00d4ff;
-      --chat-user-text: #fff;
-      --chat-bot-bg: #fff;
-      --chat-bot-text: #333;
-      --border-color: #ccc;
-    }
-    [data-theme="dark"] {
-      --bg-color: #121212;
-      --text-color: #f5f5f5;
-      --primary-color: #00d4ff;
-      --header-bg: #1e1e1e;
-      --sidebar-bg: #111;
-      --chat-user-bg: #00d4ff;
-      --chat-user-text: #fff;
-      --chat-bot-bg: #1f1f1f;
-      --chat-bot-text: #f5f5f5;
-      --border-color: #333;
-    }
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-      background: var(--bg-color);
-      color: var(--text-color);
-    }
+  <!-- ✅ External libraries -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/github-dark.min.css') }}">
+  <script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/highlight.min.js') }}"></script>
 
-    /* Sidebar */
-    #sidebar {
-      width: 260px;
-      background: var(--sidebar-bg);
-      color: white;
-      position: fixed;
-      top: 0;
-      left: -260px;
-      height: 100%;
-      transition: 0.3s;
-      padding-top: 60px;
-      z-index: 1001;
-      display: flex;
-      flex-direction: column;
-    }
-    #sidebar a {
-      display: block;
-      padding: 12px;
-      color: white;
-      text-decoration: none;
-    }
-    #sidebar a:hover { background: var(--primary-color); }
-    #sidebar.active { left: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.4); }
-
-    /* Overlay */
-    #overlay {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      display: none;
-      z-index: 1000;
-    }
-    #overlay.active { display: block; }
-
-    /* Hub dropdown */
-    .hub-toggle {
-      cursor: pointer;
-      padding: 12px;
-      font-weight: bold;
-      background: #333;
-      border-top: 1px solid #444;
-    }
-    .hub-content {
-      display: none;
-      background: #2a2a2a;
-      border-top: 1px solid #444;
-    }
-    .hub-content a { padding-left: 24px; }
-
-    /* Header */
-    header {
-      position: fixed;
-      width: 100%;
-      top: 0;
-      left: 0;
-      background: var(--header-bg);
-      color: white;
-      padding: 12px;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      z-index: 999;
-    }
-    header .menu-btn {
-      cursor: pointer;
-      font-size: 22px;
-    }
-    header h1 {
-      margin: 5px 0;
-      font-size: 18px;
-      text-align: center;
-      flex: 1;
-    }
-    .auth-links a {
-      color: white;
-      margin-left: 15px;
-      text-decoration: none;
-      font-weight: normal;
-    }
-    #theme-toggle {
-      background: transparent;
-      border: none;
-      color: white;
-      font-size: 18px;
-      cursor: pointer;
-      margin-left: 10px;
-    }
-
-    /* ✅ Floating Upgrade Button */
-    #upgrade-btn {
-      position: fixed;
-      top: 60px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--primary-color);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-weight: bold;
-      font-size: 14px;
-      border: none;
-      cursor: pointer;
-      z-index: 998;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-    #upgrade-btn:hover { background: #009ac7; }
-
-    /* Chat */
-    #chat-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      margin-top: 100px;
-      width: 100%;
-      position: relative;
-    }
-    #chat-box {
-      flex: 1;
-      padding: 20px;
-      padding-bottom: 70px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      background: var(--bg-color);
-    }
-    .msg {
-      max-width: 70%;
-      margin: 6px 0;
-      padding: 10px 14px;
-      border-radius: 10px;
-      line-height: 1.4;
-      word-wrap: break-word;
-    }
-    .user {
-      background: var(--chat-user-bg);
-      color: var(--chat-user-text);
-      align-self: flex-end;
-      border-bottom-right-radius: 0;
-    }
-    .bot {
-      background: var(--chat-bot-bg);
-      color: var(--chat-bot-text);
-      align-self: flex-start;
-      border-bottom-left-radius: 0;
-      border: 1px solid var(--border-color);
-    }
-    .msg.bot p { margin: 10px 0; line-height: 1.6; }
-    .msg.bot ul, .msg.bot ol { margin: 8px 0 8px 20px; }
-    .msg.bot li { margin: 4px 0; }
-
-    pre code {
-      display: block;
-      padding: 10px;
-      border-radius: 6px;
-      overflow-x: auto;
-      font-size: 14px;
-    }
-
-    #chat-form {
-      display: flex;
-      padding: 10px;
-      background: var(--chat-bot-bg);
-      border-top: 1px solid var(--border-color);
-      position: sticky;
-      bottom: 0;
-      left: 0;
-      right: 0;
-    }
-    #message {
-      flex: 1;
-      padding: 12px;
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-    }
-    #chat-form button {
-      padding: 12px 15px;
-      margin-left: 8px;
-      background: var(--primary-color);
-      border: none;
-      color: white;
-      font-weight: bold;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .copy-btn { margin-left: 8px; background: transparent; border: none; cursor: pointer; font-size: 14px; color: var(--primary-color); }
-    .copy-btn:hover { color: #4caf50; }
-    #typing-bubble { font-style: italic; opacity: 0.7; }
-  </style>
-
-  <!-- ✅ Local Libraries -->
-<link rel="stylesheet" href="{{ url_for('static', filename='css/github-dark.min.css') }}">
-<script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/highlight.min.js') }}"></script>
-
-<!-- your own files -->
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<script src="{{ url_for('static', filename='script.js') }}"></script>
-
+  <!-- ✅ Your own files (load last so they override) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2.0">
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
 </head>
 <body>
   <!-- Sidebar -->
@@ -248,7 +20,6 @@
     <a href="javascript:void(0)" onclick="toggleSidebar()">⬅ Back</a>
     <a href="/chat">💬 Chat</a>
 
-    <!-- Hub -->
     <div class="hub-toggle" onclick="toggleHub()">🌐 Hub ▼</div>
     <div class="hub-content" id="hub">
       <a href="/upgrade">⚡ Upgrade</a>
@@ -267,29 +38,28 @@
       {% endif %}
     </div>
 
-    <!-- Invite -->
     {% if referral_link %}
-    <div style="padding:10px; border-top:1px solid #444;">
-      🎁 Invite Friends <br>
-      <input type="text" id="referral-link" value="{{ referral_link }}" readonly style="width:100%; padding:6px;">
-      <button onclick="copyReferral()" style="margin-top:5px; padding:6px 10px; border:none; background:var(--primary-color); color:#fff; border-radius:6px; cursor:pointer;">📋 Copy</button>
-      <div style="margin-top:5px; font-size:13px;">Referrals used: {{ referrals_used }}</div>
+    <div class="invite-box">
+      🎁 Invite Friends <br />
+      <input type="text" id="referral-link" value="{{ referral_link }}" readonly />
+      <button onclick="copyReferral()">📋 Copy</button>
+      <div>Referrals used: {{ referrals_used }}</div>
     </div>
     {% endif %}
 
-    <!-- System Notices -->
     <div id="system-notices">
       <h3>📢 System Notices</h3>
       <div class="notice info">Loading notices...</div>
     </div>
   </div>
+
   <div id="overlay" onclick="toggleSidebar()"></div>
 
   <!-- Header -->
   <header>
     <span class="menu-btn" onclick="toggleSidebar()">☰</span>
     <h1>EVOSGPT {{ icon }} {{ tier }} Mode</h1>
-    <div style="display:flex; align-items:center;">
+    <div class="header-right">
       <div class="auth-links">
         {% if not logged_in %}
           <a href="/login">🔑 Login</a>
@@ -302,7 +72,6 @@
     </div>
   </header>
 
-  <!-- ✅ Floating Upgrade (only for lower tiers) -->
   {% if tier not in ["King", "Founder"] %}
     <button id="upgrade-btn" onclick="location.href='/upgrade'">⚡ Upgrade Tier</button>
   {% endif %}
@@ -311,141 +80,14 @@
   <div id="chat-container">
     <div id="chat-box"></div>
     <form id="chat-form">
-      <input type="text" id="message" placeholder="Type your message..." autocomplete="off" required>
+      <input type="text" id="message" placeholder="Type your message..." autocomplete="off" required />
       <button type="submit">Send</button>
     </form>
   </div>
 
-<!-- ✅ Custom Script -->
-<script>
-  console.log("Marked loaded?", window.marked);
-
-  function toggleSidebar() {
-    document.getElementById("sidebar").classList.toggle("active");
-    document.getElementById("overlay").classList.toggle("active");
-  }
-  function toggleHub() {
-    const hub = document.getElementById("hub");
-    hub.style.display = hub.style.display === "block" ? "none" : "block";
-  }
-  const chatBox = document.getElementById("chat-box");
-  function scrollToBottom() { chatBox.scrollTop = chatBox.scrollHeight; }
-
-  // ✅ Dark/Light theme toggle
-  const themeToggle = document.getElementById("theme-toggle");
-  themeToggle.addEventListener("click", () => {
-    const current = document.body.getAttribute("data-theme");
-    if (current === "dark") {
-      document.body.setAttribute("data-theme", "light");
-      themeToggle.textContent = "🌙";
-      localStorage.setItem("theme", "light");
-    } else {
-      document.body.setAttribute("data-theme", "dark");
-      themeToggle.textContent = "☀";
-      localStorage.setItem("theme", "dark");
-    }
-  });
-  const savedTheme = localStorage.getItem("theme");
-  if (savedTheme) {
-    document.body.setAttribute("data-theme", savedTheme);
-    themeToggle.textContent = savedTheme === "dark" ? "☀" : "🌙";
-  } else {
-    document.body.setAttribute("data-theme", "light");
-    themeToggle.textContent = "🌙";
-  }
-
-  // ✅ Safe Markdown wrapper + syntax highlighting
-  function safeMarkdown(txt) {
-    try {
-      if (!window.marked) {
-        console.error("❌ Marked.js not loaded!");
-        return txt;
-      }
-      const html = marked.parse(txt);
-      if (window.hljs) {
-        setTimeout(() => hljs.highlightAll(), 0);
-      }
-      return html;
-    } catch (e) {
-      console.error("Markdown parse error", e);
-      return txt;
-    }
-  }
-
-  // ✅ Chat logic
-  document.getElementById("chat-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const input = document.getElementById("message");
-    const text = input.value.trim();
-    if (!text) return;
-
-    chatBox.insertAdjacentHTML("beforeend", `<div class="msg user">${text}</div>`);
-    scrollToBottom();
-    input.value = "";
-
-    const typing = document.createElement("div");
-    typing.className = "msg bot";
-    typing.id = "typing-bubble";
-    typing.innerHTML = "EVOSGPT is typing...";
-    chatBox.appendChild(typing);
-    scrollToBottom();
-
-    try {
-      const res = await fetch("/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text })
-      });
-      if (!res.ok) throw new Error("Network error " + res.status);
-      const data = await res.json();
-      typing.remove();
-
-      chatBox.insertAdjacentHTML("beforeend", `
-        <div class="msg bot">
-          <strong>EVOSGPT [${data.tier || "?"}]</strong><br>
-          <div class="bot-content">${safeMarkdown(data.reply)}</div>
-          <button class="copy-btn" onclick="copyText(this)">📋</button>
-        </div>
-      `);
-      scrollToBottom();
-    } catch (err) {
-      typing.remove();
-      chatBox.insertAdjacentHTML("beforeend", `<div class="msg bot error">⚠ Error: ${err.message}</div>`);
-    }
-  });
-
-  function copyReferral() {
-    const link = document.getElementById("referral-link");
-    link.select(); link.setSelectionRange(0, 99999);
-    navigator.clipboard.writeText(link.value).then(() => alert("✅ Referral link copied!"));
-  }
-
-  async function loadNotices() {
-    try {
-      const res = await fetch("/system_notices");
-      const data = await res.json();
-      const container = document.getElementById("system-notices");
-      container.innerHTML = "<h3>📢 System Notices</h3>";
-      if (data.length === 0) {
-        container.innerHTML += '<div class="notice info">No active notices.</div>';
-      } else {
-        data.forEach(note => {
-          container.innerHTML += `<div class="notice ${note.type}">${note.msg}</div>`;
-        });
-      }
-    } catch {}
-  }
-  loadNotices();
-  setInterval(loadNotices, 30000);
-
-  function copyText(button) {
-    const text = button.parentElement.innerText.replace("📋", "").trim();
-    navigator.clipboard.writeText(text).then(() => {
-      button.textContent = "✅";
-      setTimeout(() => button.textContent = "📋", 1500);
-    });
-  }
-</script>
+  <!-- Inline minimal fallback logic -->
+  <script>
+    console.log("✅ Marked loaded?", !!window.marked);
+  </script>
 </body>
 </html>
-
