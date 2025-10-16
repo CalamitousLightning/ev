@@ -15,7 +15,7 @@
     :root {
       --bg-color: #f5f7fa;
       --text-color: #333;
-      --primary-color: #ff9800;
+      --primary-color: #ff9800; /* Orange accent */
       --header-bg: #00d4ff;
       --sidebar-bg: #222;
       --chat-user-bg: #00d4ff;
@@ -82,6 +82,7 @@
     }
     #overlay.active { display: block; }
 
+    /* Hub dropdown */
     .hub-toggle {
       cursor: pointer;
       padding: 12px;
@@ -96,6 +97,7 @@
     }
     .hub-content a { padding-left: 24px; }
 
+    /* Header */
     header {
       position: fixed;
       width: 100%;
@@ -160,14 +162,17 @@
       background: var(--bg-color);
       scroll-behavior: smooth;
     }
+
+    /* Messages */
     .msg {
       max-width: 75%;
       margin: 6px 0;
       padding: 10px 14px;
       border-radius: 10px;
-      line-height: 1.5;
+      line-height: 1.45;
       word-wrap: break-word;
       white-space: pre-wrap;
+      position: relative;
     }
     .user {
       background: var(--chat-user-bg);
@@ -182,28 +187,37 @@
       border-bottom-left-radius: 0;
       border: 1px solid var(--border-color);
     }
-    .bot .bot-content p { margin: 8px 0; }
-    .bot .bot-content ul, .bot .bot-content ol { margin: 6px 0 6px 20px; }
 
+    /* Paragraph & List Spacing */
+    .bot .bot-content p { margin: 5px 0; }
+    .bot .bot-content ul, .bot .bot-content ol { margin: 6px 0 6px 18px; }
+    .bot .bot-content li { margin: 3px 0; }
+
+    /* Code Blocks */
     pre code {
       display: block;
-      padding: 10px;
+      padding: 8px;
       border-radius: 6px;
       overflow-x: auto;
       font-size: 14px;
+      background: rgba(0,0,0,0.05);
     }
 
+    /* Copy Button */
     .copy-btn {
-      margin-top: 6px;
+      position: absolute;
+      right: 10px;
+      bottom: 8px;
       background: transparent;
       border: none;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13px;
       color: var(--primary-color);
-      align-self: flex-end;
+      opacity: 0.8;
     }
-    .copy-btn:hover { color: #4caf50; }
+    .copy-btn:hover { color: #4caf50; opacity: 1; }
 
+    /* Chat Input */
     #chat-form {
       display: flex;
       padding: 10px;
@@ -361,7 +375,7 @@
         <div class="msg bot">
           <strong>EVOSGPT [${data.tier || "?"}]</strong><br>
           <div class="bot-content">${marked.parse(data.reply)}</div>
-          <button class="copy-btn" onclick="copyText(this)">📋 Copy</button>
+          <button class="copy-btn" onclick="copyText(this)">📋</button>
         </div>
       `);
       scrollToBottom();
@@ -380,10 +394,10 @@
 
   // Copy message
   function copyText(button) {
-    const text = button.parentElement.innerText.replace("📋 Copy", "").trim();
+    const text = button.parentElement.innerText.replace("📋", "").trim();
     navigator.clipboard.writeText(text).then(() => {
-      button.textContent = "✅ Copied";
-      setTimeout(() => button.textContent = "📋 Copy", 1500);
+      button.textContent = "✅";
+      setTimeout(() => button.textContent = "📋", 1500);
     });
   }
 
